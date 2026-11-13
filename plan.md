@@ -132,6 +132,7 @@ dra/
   ops_compose.go ops_pad.go ops_lines.go
   ops_truncate.go ops_wrap.go
   measure.go                                 StringWidth
+  gradient.go                                Gradient, Axis
   *_test.go, testdata/
 internal/
   ansi/     SGR encoding and color downgrade
@@ -1031,9 +1032,35 @@ internals.
 type Align uint8  // AlignLeft, AlignCenter, AlignRight
 type VAlign uint8 // AlignTop, AlignMiddle, AlignBottom
 type WrapMode uint8 // WrapWords, WrapAnywhere
+type Axis uint8   // AxisVertical, AxisHorizontal, AxisDiagonal
 ```
 
 Unknown values behave like the first constant of the type.
+
+```go
+// Gradient is a color that changes with the position inside a rectangle.
+// The zero value has no stops and yields the unset Color everywhere.
+type Gradient struct{ /* unexported */ }
+
+func NewGradient(axis Axis, stops ...Color) Gradient
+func (g Gradient) At(x, y, width, height int) Color
+func (g Gradient) IsZero() bool // no stops
+```
+
+- Stops are spread evenly along the axis and interpolated linearly per
+  RGB channel, rounding to the nearest value. The result of `At` is an
+  RGB color; the Engine downgrades it like any other color, so on a
+  16-color profile a gradient collapses into a few bands.
+- Stops that are not RGB are converted with the tables of 5.5 when the
+  gradient is created. Unset stops and `TerminalDefault` are dropped.
+- No stops: `At` returns the unset `Color`. One stop: that color
+  everywhere.
+- Position `t` in the range 0-1: `AxisVertical` uses `y / (height-1)`,
+  `AxisHorizontal` uses `x / (width-1)`, `AxisDiagonal` uses
+  `(x + y) / (width-1 + height-1)`. A zero denominator gives `t = 0`.
+  `t` is clamped, so coordinates outside the rectangle take the color of
+  the nearest end.
+- `Gradient` is an immutable value and copies the stops it is given.
 
 Centering with an odd remainder puts the extra cell on the right
 (horizontal) or at the bottom (vertical).
@@ -1161,6 +1188,22 @@ Empty source lines are preserved. Styles are preserved across breaks.
 Layers `st` under the model: every span becomes `span.style.Over(st)`. The
 model's own styles win; `st` fills what is unset and adds attributes.
 
+#### `RestyleFunc(m Model, fn func(x, y int) Style) Model`
+
+Layers a style chosen by position over the model: every cell becomes
+`fn(x, y).Over(cell style)`, where `x` is the column of the cell and `y`
+its line, both from 0. Unlike `Restyle`, the returned style wins over the
+model's own; a zero `Style` leaves the cell unchanged. This is the
+primitive for gradients and for any coloring that depends on position.
+
+- `fn` is called once per cluster, with the column of its first cell, in
+  text order. It must be a pure function: the result may be cached and
+  the call order is not part of the contract.
+- A nil `fn` returns the model unchanged in composed form.
+- Text, width and height are never changed.
+- Adjacent cells that end up with equal styles are merged into one span,
+  so a function that returns few distinct styles costs few spans.
+
 ### 10.4 Edge cases
 
 Test each of these explicitly.
@@ -1195,6 +1238,11 @@ Test each of these explicitly.
   inheritance still works.
 - More than 128 distinct styles across the inputs of `Stack`: works (this
   is the reason for the composed form).
+- `RestyleFunc` with a nil function, with a function that returns the zero
+  style, over wide clusters in Long Mode (one call per cluster), and with
+  a different style for every cell of a 40 by 20 model.
+- `Gradient.At` with no stops, one stop, two and three stops, each axis,
+  a 1 by 1 rectangle, and coordinates outside the rectangle.
 
 ### 10.5 Tests
 
@@ -1226,6 +1274,7 @@ Test each of these explicitly.
 6. `Add Truncate and TruncateHeight operations`
 7. `Add Wrap operation`
 8. `Add Restyle operation`
+9. `Add Gradient and RestyleFunc operation`
 
 ---
 
@@ -1967,6 +2016,12 @@ added or changed, and why.
   name and a status, a section and an owner), and a label that must stand
   out from the border line. Neither can be built from outside the block:
   a child cannot draw on the border cells.
+- 2026-11-13. `dra` gets `Gradient`, `Axis` and the `RestyleFunc`
+  operation. Coloring by position (gradients on frames and on ASCII art)
+  could not be expressed: `Restyle` applies one style to the whole model.
+  `RestyleFunc` is the general primitive and `Gradient` is the common
+  case on top of it, so custom blocks get the same capability as the
+  standard ones.
 - 2026-11-13. `BorderSet` gets `LeftJoin` and `RightJoin`, and `blocks`
   gets the `Sections` container. A frame split by dividers that connect
   to it cannot be composed from `Border`: the divider has to cover the
