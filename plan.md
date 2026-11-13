@@ -1542,7 +1542,8 @@ Options: `PaddingAll(n)`, `PaddingX(n)`, `PaddingY(n)`,
 
 Options: `BorderStyle(BorderSet)`, `BorderColor(dra.Style)`,
 `BorderTitle(string)`, `BorderTitleAlign(dra.Align)`,
-`BorderPadding(x, y int)` (default 1, 0).
+`BorderTitleStyle(dra.Style)`, `BorderCaption(string)`,
+`BorderCaptionStyle(dra.Style)`, `BorderPadding(x, y int)` (default 1, 0).
 
 `BorderSet` is an exported struct with fields `TopLeft`, `Top`, `TopRight`,
 `Left`, `Right`, `BottomLeft`, `Bottom`, `BottomRight` (strings). Provided
@@ -1555,6 +1556,17 @@ sets: `BorderRounded` (default), `BorderSquare`, `BorderDouble`,
 - The title sits in the top edge with one space on each side. A title
   wider than the top edge is truncated with an ellipsis. With no room for
   even one title cell plus its spaces, the title is omitted.
+- The caption is a second label in the top edge. It is placed the way a
+  right-aligned title is, whatever `BorderTitleAlign` says. The title is
+  laid out first by the rules above. The caption is drawn only when it
+  fits whole to the right of the title with at least one edge cell
+  between them; otherwise it is omitted. It is never truncated and never
+  widens the box. With a right-aligned title the caption therefore never
+  appears. Newlines in the caption are replaced by spaces.
+- `BorderTitleStyle` and `BorderCaptionStyle` are layered over
+  `BorderColor` (`style.Over(borderColor)`) and apply to the label text
+  only, not to the spaces around it. Both default to the zero style, so a
+  label looks like the border unless styled.
 - An empty child renders a box with an empty interior: two lines.
 - Each field of a custom `BorderSet` is expected to be one cell wide. An
   empty field is replaced by a space. Wider fields are truncated to one
@@ -1885,3 +1897,9 @@ Decisions already made. Do not revisit them without the maintainer.
 
 Record additions below this line while implementing: the date, what was
 added or changed, and why.
+
+- 2026-11-13. `Border` gets `BorderCaption`, `BorderCaptionStyle` and
+  `BorderTitleStyle`. A box often needs two labels in its top edge (a
+  name and a status, a section and an owner), and a label that must stand
+  out from the border line. Neither can be built from outside the block:
+  a child cannot draw on the border cells.
