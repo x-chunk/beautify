@@ -76,7 +76,7 @@ flexbox-style engine. See `goals.md` and the non-goals in `AGENTS.md`.
 ## 2. Global requirements
 
 - **Language and module.** Go 1.24. Module path
-  `github.com/x-chunk/beautify`. `go.mod` has no `require` entries.
+  `go.xchunk.org/beautify`. `go.mod` has no `require` entries.
 - **Dependencies.** Standard library only, in code and in tests.
 - **Immutability.** `Model`, `Factory`, `Style`, `Color`, `Engine`,
   `Template` and `Context` are immutable after creation. Every function
@@ -159,7 +159,7 @@ Import rules:
 
 ### 4.1 Work
 
-- Create `go.mod` (`module github.com/x-chunk/beautify`, `go 1.24`).
+- Create `go.mod` (`module go.xchunk.org/beautify`, `go 1.24`).
 - Add `doc.go` for the root package with a short package comment.
 - Add `.github/workflows/ci.yml`: on push and pull request, with Go 1.24 on
   `ubuntu-latest`, `macos-latest` and `windows-latest`, run the `gofmt`

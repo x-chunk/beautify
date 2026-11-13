@@ -1,7 +1,7 @@
 # beautify
 
 A Go library for building beautiful terminal output: styled text, frames,
-tables, trees and custom layouts. Module path: `github.com/x-chunk/beautify`.
+tables, trees and custom layouts. Module path: `go.xchunk.org/beautify`.
 
 Read `plan.md` for the implementation plan and `goals.md` for deferred work
 and deliberate non-goals before changing the design.
