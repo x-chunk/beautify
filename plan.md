@@ -118,7 +118,7 @@ blocks/
   styled.go padding.go border.go align.go
   sized.go badge.go                          wrappers
   row.go column.go table.go tree.go
-  list.go keyvalue.go                        containers
+  list.go keyvalue.go sections.go            containers
   imports_test.go                            enforces "no internal imports"
   *_test.go, testdata/
 dra/
@@ -1546,9 +1546,22 @@ Options: `BorderStyle(BorderSet)`, `BorderColor(dra.Style)`,
 `BorderCaptionStyle(dra.Style)`, `BorderPadding(x, y int)` (default 1, 0).
 
 `BorderSet` is an exported struct with fields `TopLeft`, `Top`, `TopRight`,
-`Left`, `Right`, `BottomLeft`, `Bottom`, `BottomRight` (strings). Provided
-sets: `BorderRounded` (default), `BorderSquare`, `BorderDouble`,
-`BorderHeavy`, `BorderASCII`. Users can pass their own.
+`Left`, `Right`, `BottomLeft`, `Bottom`, `BottomRight`, `LeftJoin` and
+`RightJoin` (strings). Provided sets: `BorderRounded` (default),
+`BorderSquare`, `BorderDouble`, `BorderHeavy`, `BorderASCII`. Users can
+pass their own.
+
+`LeftJoin` and `RightJoin` are the cells where a horizontal divider meets
+the left and the right edge. `Border` itself does not draw them; they
+belong to the set so that `Sections` (12.5) and custom blocks can draw
+dividers that connect to the frame. Their values in the provided sets:
+
+| Set | `LeftJoin` | `RightJoin` |
+|-----|------------|-------------|
+| `BorderRounded`, `BorderSquare` | `├` | `┤` |
+| `BorderDouble` | `╠` | `╣` |
+| `BorderHeavy` | `┣` | `┫` |
+| `BorderASCII` | `+` | `+` |
 
 - The child gets the bound minus two border cells and the horizontal
   padding.
@@ -1694,6 +1707,53 @@ Options: `TreeGuides(GuideSet)`, `TreeGuideStyle(dra.Style)`,
   a chain to confirm there is no quadratic blowup; if recursion is a
   problem at that depth, switch to an explicit stack.
 
+#### `Sections(sections []Section, opts ...SectionsOption)`
+
+One frame around several children, with a divider between neighbors that
+connects to the frame. Each child can have a title.
+
+```
+╭─ System ──────── host ─╮
+│ OS      Ubuntu 24.04   │
+├─ Hardware ─────────────┤
+│ CPU     Ryzen 7 5800X  │
+╰────────────────────────╯
+```
+
+`Section` is `{Title string; Body beautify.Composable}`. Options:
+`SectionsBorder(BorderSet)` (default `BorderRounded`),
+`SectionsBorderStyle(dra.Style)`, `SectionsTitleAlign(dra.Align)`,
+`SectionsTitleStyle(dra.Style)`, `SectionsCaption(string)`,
+`SectionsCaptionStyle(dra.Style)`, `SectionsPadding(x, y int)` (default
+1, 0).
+
+- The title of the first section sits in the top edge. The title of every
+  other section sits in the divider above it. Titles follow the title
+  rules of `Border`: one space on each side, truncated with an ellipsis,
+  omitted when there is no room, aligned by `SectionsTitleAlign`. A
+  section with an empty title gets a plain edge or divider.
+- A divider is `LeftJoin`, then the `Top` cell repeated across the inner
+  width including the horizontal padding, then `RightJoin`.
+- The caption belongs to the top edge only and follows the caption rules
+  of `Border`.
+- `SectionsTitleStyle` and `SectionsCaptionStyle` are layered over
+  `SectionsBorderStyle`, as in `Border`.
+- Every body gets the bound minus two border cells and the horizontal
+  padding. The box is as wide as the widest body needs, not the full
+  bound, and every body is padded to that width so the right edge is
+  straight. Titles and the caption never widen the box.
+- The vertical padding is applied inside every section, above and below
+  its body.
+- A body that renders to an empty model contributes no interior lines:
+  its edge or divider is still drawn.
+- No sections: empty model. One section renders exactly what `Border`
+  renders for the same child and the equivalent options.
+- A nil body is `beautify.ErrNilComposable` (12.1).
+- The fields of a custom `BorderSet` follow the rules of `Border`: an
+  empty field, `LeftJoin` and `RightJoin` included, is replaced by a
+  space, and a wider field is truncated to one cell.
+- With a bound below 2, apply the "insufficient room" rule of 12.1.
+
 #### `Table(opts ...TableOption)`
 
 Options: `TableHeaders(cells ...beautify.Composable)`,
@@ -1759,6 +1819,9 @@ Composition tests:
 - A tree inside a border inside a row cell.
 - A table whose cells contain lists.
 - A border inside a border with a title.
+- `Sections` with one section against `Border` with the same child and
+  options: the output is byte-for-byte equal, for every provided
+  `BorderSet`.
 - A template of blocks rendered by a `Composer` at a fixed width.
 
 ### 12.7 Commits
@@ -1779,7 +1842,8 @@ One commit per block, in this order, each with its tests and golden files:
 12. `Add List block`
 13. `Add Tree block`
 14. `Add Table block`
-15. `Add block composition tests`
+15. `Add Sections block`
+16. `Add block composition tests`
 
 ---
 
@@ -1903,3 +1967,9 @@ added or changed, and why.
   name and a status, a section and an owner), and a label that must stand
   out from the border line. Neither can be built from outside the block:
   a child cannot draw on the border cells.
+- 2026-11-13. `BorderSet` gets `LeftJoin` and `RightJoin`, and `blocks`
+  gets the `Sections` container. A frame split by dividers that connect
+  to it cannot be composed from `Border`: the divider has to cover the
+  border cells and the padding, which only the block that draws the frame
+  can reach. The join cells live in `BorderSet` so that every provided
+  set, and every custom one, has matching dividers.
