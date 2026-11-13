@@ -1592,7 +1592,8 @@ Options: `PaddingAll(n)`, `PaddingX(n)`, `PaddingY(n)`,
 Options: `BorderStyle(BorderSet)`, `BorderColor(dra.Style)`,
 `BorderGradient(dra.Gradient)`, `BorderTitle(string)`, `BorderTitleAlign(dra.Align)`,
 `BorderTitleStyle(dra.Style)`, `BorderCaption(string)`,
-`BorderCaptionStyle(dra.Style)`, `BorderPadding(x, y int)` (default 1, 0).
+`BorderCaptionStyle(dra.Style)`, `BorderFooter(dra.Model)`,
+`BorderPadding(x, y int)` (default 1, 0).
 
 `BorderSet` is an exported struct with fields `TopLeft`, `Top`, `TopRight`,
 `Left`, `Right`, `BottomLeft`, `Bottom`, `BottomRight`, `LeftJoin` and
@@ -1629,11 +1630,20 @@ dividers that connect to the frame. Their values in the provided sets:
   `BorderColor` (`style.Over(borderColor)`) and apply to the label text
   only, not to the spaces around it. Both default to the zero style, so a
   label looks like the border unless styled.
+- The footer is a label in the bottom edge. It is placed the way the
+  caption is placed in the top edge: at the right end, with one space on
+  each side. It is a model, not a string, so that it can carry several
+  styles (a row of colored status dots, for example); only its first line
+  is used. It is drawn only when it fits whole with at least one edge cell
+  on each side; otherwise it is omitted. It is never truncated and never
+  widens the box. `BorderColor` is layered under it with `dra.Restyle`,
+  so its own styles win. An empty model means no footer.
 - `BorderGradient` colors the frame by position: for every border cell
   the foreground of `BorderColor` is replaced by the gradient's color at
   that cell within the whole box, and everything else is resolved as
   before. The title and the caption therefore follow the gradient unless
-  their own style sets a foreground. The child is not touched. A gradient
+  their own style sets a foreground, and so do the cells of the footer.
+  The child is not touched. A gradient
   with no stops is the same as no gradient. Implement it with
   `dra.RestyleFunc` on the cells the block knows to be frame cells.
 - An empty child renders a box with an empty interior: two lines.
@@ -1781,8 +1791,8 @@ connects to the frame. Each child can have a title.
 `SectionsBorderStyle(dra.Style)`,
 `SectionsBorderGradient(dra.Gradient)`, `SectionsTitleAlign(dra.Align)`,
 `SectionsTitleStyle(dra.Style)`, `SectionsCaption(string)`,
-`SectionsCaptionStyle(dra.Style)`, `SectionsPadding(x, y int)` (default
-1, 0).
+`SectionsCaptionStyle(dra.Style)`, `SectionsFooter(dra.Model)`,
+`SectionsPadding(x, y int)` (default 1, 0).
 
 - The title of the first section sits in the top edge. The title of every
   other section sits in the divider above it. Titles follow the title
@@ -1792,7 +1802,7 @@ connects to the frame. Each child can have a title.
 - A divider is `LeftJoin`, then the `Top` cell repeated across the inner
   width including the horizontal padding, then `RightJoin`.
 - The caption belongs to the top edge only and follows the caption rules
-  of `Border`.
+  of `Border`. The footer follows the footer rules of `Border`.
 - `SectionsTitleStyle` and `SectionsCaptionStyle` are layered over
   `SectionsBorderStyle`, as in `Border`.
 - `SectionsBorderGradient` follows the rules of `BorderGradient`. The
@@ -2036,6 +2046,9 @@ added or changed, and why.
   cannot apply `RestyleFunc` to the frame alone from outside: it would
   have to know which cells of the rendered box belong to the frame, which
   depends on the padding, the titles and the dividers.
+- 2026-11-13. `Border` and `Sections` get a footer: a label in the bottom
+  edge. It takes a `dra.Model` instead of a string because the motivating
+  content, a row of differently colored marks, needs more than one style.
 - 2026-11-13. `BorderSet` gets `LeftJoin` and `RightJoin`, and `blocks`
   gets the `Sections` container. A frame split by dividers that connect
   to it cannot be composed from `Border`: the divider has to cover the
