@@ -1590,7 +1590,7 @@ Options: `PaddingAll(n)`, `PaddingX(n)`, `PaddingY(n)`,
 #### `Border(child, opts ...BorderOption)`
 
 Options: `BorderStyle(BorderSet)`, `BorderColor(dra.Style)`,
-`BorderTitle(string)`, `BorderTitleAlign(dra.Align)`,
+`BorderGradient(dra.Gradient)`, `BorderTitle(string)`, `BorderTitleAlign(dra.Align)`,
 `BorderTitleStyle(dra.Style)`, `BorderCaption(string)`,
 `BorderCaptionStyle(dra.Style)`, `BorderPadding(x, y int)` (default 1, 0).
 
@@ -1629,6 +1629,13 @@ dividers that connect to the frame. Their values in the provided sets:
   `BorderColor` (`style.Over(borderColor)`) and apply to the label text
   only, not to the spaces around it. Both default to the zero style, so a
   label looks like the border unless styled.
+- `BorderGradient` colors the frame by position: for every border cell
+  the foreground of `BorderColor` is replaced by the gradient's color at
+  that cell within the whole box, and everything else is resolved as
+  before. The title and the caption therefore follow the gradient unless
+  their own style sets a foreground. The child is not touched. A gradient
+  with no stops is the same as no gradient. Implement it with
+  `dra.RestyleFunc` on the cells the block knows to be frame cells.
 - An empty child renders a box with an empty interior: two lines.
 - Each field of a custom `BorderSet` is expected to be one cell wide. An
   empty field is replaced by a space. Wider fields are truncated to one
@@ -1771,7 +1778,8 @@ connects to the frame. Each child can have a title.
 
 `Section` is `{Title string; Body beautify.Composable}`. Options:
 `SectionsBorder(BorderSet)` (default `BorderRounded`),
-`SectionsBorderStyle(dra.Style)`, `SectionsTitleAlign(dra.Align)`,
+`SectionsBorderStyle(dra.Style)`,
+`SectionsBorderGradient(dra.Gradient)`, `SectionsTitleAlign(dra.Align)`,
 `SectionsTitleStyle(dra.Style)`, `SectionsCaption(string)`,
 `SectionsCaptionStyle(dra.Style)`, `SectionsPadding(x, y int)` (default
 1, 0).
@@ -1787,6 +1795,8 @@ connects to the frame. Each child can have a title.
   of `Border`.
 - `SectionsTitleStyle` and `SectionsCaptionStyle` are layered over
   `SectionsBorderStyle`, as in `Border`.
+- `SectionsBorderGradient` follows the rules of `BorderGradient`. The
+  dividers and their join cells are frame cells.
 - Every body gets the bound minus two border cells and the horizontal
   padding. The box is as wide as the widest body needs, not the full
   bound, and every body is padded to that width so the right edge is
@@ -2022,6 +2032,10 @@ added or changed, and why.
   `RestyleFunc` is the general primitive and `Gradient` is the common
   case on top of it, so custom blocks get the same capability as the
   standard ones.
+- 2026-11-13. `Border` and `Sections` get a gradient option. A caller
+  cannot apply `RestyleFunc` to the frame alone from outside: it would
+  have to know which cells of the rendered box belong to the frame, which
+  depends on the padding, the titles and the dividers.
 - 2026-11-13. `BorderSet` gets `LeftJoin` and `RightJoin`, and `blocks`
   gets the `Sections` container. A frame split by dividers that connect
   to it cannot be composed from `Border`: the divider has to cover the
