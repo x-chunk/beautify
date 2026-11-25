@@ -1,10 +1,6 @@
 package dra
 
-import (
-	"math"
-
-	"go.xchunk.org/beautify/internal/ansi"
-)
+import "go.xchunk.org/beautify/internal/ansi"
 
 // Axis is the direction a Gradient runs in. Unknown values behave like
 // AxisVertical.
@@ -51,31 +47,49 @@ func (g Gradient) At(x, y, width, height int) Color {
 	if len(g.stops) == 0 {
 		return Color{}
 	}
-	pos := g.position(x, y, width, height) * float64(len(g.stops)-1)
-	i := min(int(pos), len(g.stops)-1)
-	from, to := g.stops[i], g.stops[min(i+1, len(g.stops)-1)]
-	frac := pos - float64(i)
+	num, den := g.position(x, y, width, height)
+	num *= int64(len(g.stops) - 1)
+	i := num / den
+	rem := num % den
+	from, to := g.stops[i], g.stops[min(i+1, int64(len(g.stops)-1))]
 	var c [3]uint8
 	for ch := range c {
-		a, b := float64(from[ch]), float64(to[ch])
-		c[ch] = uint8(math.Round(a + (b-a)*frac))
+		sum := int64(from[ch])*(den-rem) + int64(to[ch])*rem
+		c[ch] = uint8((2*sum + den) / (2 * den))
 	}
 	return RGB(c[0], c[1], c[2])
 }
 
-// position maps a cell to the range 0-1 along the axis. It works on floats
-// so that extreme coordinates cannot overflow.
-func (g Gradient) position(x, y, width, height int) float64 {
-	dx, dy := math.Max(float64(width)-1, 0), math.Max(float64(height)-1, 0)
-	num, den := float64(y), dy
+// position maps a cell to the fraction num/den in the range 0-1 along the
+// axis. den is positive and small enough for At to multiply by it.
+//
+// Integers keep the result exact and equal on all platforms; floating point
+// is not, because some compilers fuse multiplication and addition.
+func (g Gradient) position(x, y, width, height int) (num, den int64) {
+	const (
+		maxSum = 1 << 61 // two such values still fit into an int64
+		maxDen = 1 << 30
+	)
+	px, py := int64(x), int64(y)
+	dx, dy := int64(max(width, 1)-1), int64(max(height, 1)-1)
+	for max(px, py, dx, dy) > maxSum || min(px, py) < -maxSum {
+		// Scaling everything keeps the proportions of absurd sizes.
+		px, py, dx, dy = px/2, py/2, dx/2, dy/2
+	}
 	switch g.axis {
 	case AxisHorizontal:
-		num, den = float64(x), dx
+		num, den = px, dx
 	case AxisDiagonal:
-		num, den = float64(x)+float64(y), dx+dy
+		num, den = px+py, dx+dy
+	default:
+		num, den = py, dy
 	}
 	if den == 0 {
-		return 0
+		return 0, 1
 	}
-	return math.Min(math.Max(num/den, 0), 1)
+	num = min(max(num, 0), den)
+	for den > maxDen {
+		num, den = num/2, den/2
+	}
+	return num, den
 }

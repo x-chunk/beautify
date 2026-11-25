@@ -67,3 +67,51 @@ func TestGradientCopiesStops(t *testing.T) {
 		t.Errorf("At() = %+v", got)
 	}
 }
+
+// TestGradientIsExact compares every color with exact rational arithmetic.
+// Floating point is not good enough: its results differ between platforms
+// that fuse multiplication and addition and those that do not.
+func TestGradientIsExact(t *testing.T) {
+	values := []int64{255, 0, 43, 128, 7}
+	for stops := 2; stops <= len(values); stops++ {
+		var colors []Color
+		for _, v := range values[:stops] {
+			colors = append(colors, RGB(uint8(v), 0, 0))
+		}
+		g := NewGradient(AxisHorizontal, colors...)
+		for width := 2; width <= 120; width++ {
+			den := int64(width - 1)
+			for x := range width {
+				pos := int64(x) * int64(stops-1)
+				i, rem := pos/den, pos%den
+				sum := values[i] * (den - rem)
+				if rem > 0 {
+					sum += values[i+1] * rem
+				}
+				want := RGB(uint8((2*sum+den)/(2*den)), 0, 0)
+				if got := g.At(x, 0, width, 1); got != want {
+					t.Errorf("%d stops, cell %d of %d: %+v, want %+v", stops, x, width, got, want)
+				}
+			}
+		}
+	}
+}
+
+func TestGradientExtremeCoordinates(t *testing.T) {
+	black, white := RGB(0, 0, 0), RGB(255, 255, 255)
+	for _, axis := range []Axis{AxisVertical, AxisHorizontal, AxisDiagonal} {
+		g := NewGradient(axis, black, white)
+		if got := g.At(math.MinInt, math.MinInt, math.MaxInt, math.MaxInt); got != black {
+			t.Errorf("axis %d, start: %+v", axis, got)
+		}
+		if got := g.At(math.MaxInt, math.MaxInt, math.MaxInt, math.MaxInt); got != white {
+			t.Errorf("axis %d, end: %+v", axis, got)
+		}
+		if got := g.At(math.MaxInt/2, math.MaxInt/2, math.MaxInt, math.MaxInt); got != RGB(127, 127, 127) && got != RGB(128, 128, 128) {
+			t.Errorf("axis %d, middle: %+v", axis, got)
+		}
+		if got := g.At(5, 5, math.MinInt, math.MinInt); got != black {
+			t.Errorf("axis %d, negative size: %+v", axis, got)
+		}
+	}
+}
