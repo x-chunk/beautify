@@ -141,6 +141,33 @@ func (b *builder) addLine(l line) {
 	}
 }
 
+// addCut appends as many whole clusters from the start of l as fit into
+// limit cells. It stops at the first cluster that does not fit, and adds
+// nothing when limit is not positive.
+func (b *builder) addCut(l line, limit int) {
+	if limit <= 0 {
+		return
+	}
+	for _, s := range l.spans {
+		if s.width <= limit {
+			b.add(s)
+			limit -= s.width
+			continue
+		}
+		end, used := 0, 0
+		for {
+			size, w := width.Next(s.text[end:], s.mode.width())
+			if size == 0 || used+w > limit {
+				break
+			}
+			end += size
+			used += w
+		}
+		b.add(span{text: s.text[:end], style: s.style, mode: s.mode, width: used})
+		return
+	}
+}
+
 // flush moves the pending span to the finished ones.
 func (b *builder) flush() {
 	if b.pending.text == "" {
