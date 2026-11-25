@@ -2,6 +2,7 @@ package blocks
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"testing"
 
@@ -139,7 +140,7 @@ func TestTableShrink(t *testing.T) {
 		"╭───┬──",
 		"│ a │ b",
 		"╰───┴──")
-	checkText(t, Table(TableRow(texts("abc")...), TableColumns(ColumnSpec{Width: 1 << 50})), 7,
+	checkText(t, Table(TableRow(texts("abc")...), TableColumns(ColumnSpec{Width: math.MaxInt})), 7,
 		"╭──────",
 		"│ abc  ",
 		"╰──────")

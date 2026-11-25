@@ -1,6 +1,9 @@
 package dra
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestGradientAt(t *testing.T) {
 	black, white, red := RGB(0, 0, 0), RGB(255, 255, 255), RGB(255, 0, 0)
@@ -33,7 +36,7 @@ func TestGradientAt(t *testing.T) {
 		{"negative size", NewGradient(AxisDiagonal, black, white), 2, 3, -4, -4, black},
 		{"before the start", NewGradient(AxisVertical, black, white), 0, -3, 5, 5, black},
 		{"after the end", NewGradient(AxisVertical, black, white), 0, 40, 5, 5, white},
-		{"huge coordinates", NewGradient(AxisDiagonal, black, white), 1 << 62, 1 << 62, 1 << 62, 1 << 62, white},
+		{"huge coordinates", NewGradient(AxisDiagonal, black, white), math.MaxInt, math.MaxInt, math.MaxInt, math.MaxInt, white},
 		{"palette stops use the xterm values", NewGradient(AxisVertical, Red, ANSI256(231)), 0, 0, 1, 2, RGB(128, 0, 0)},
 		{"unset and default stops are dropped", NewGradient(AxisVertical, Color{}, red, TerminalDefault), 0, 0, 1, 2, red},
 		{"only dropped stops", NewGradient(AxisVertical, Color{}, TerminalDefault), 0, 0, 1, 2, Color{}},

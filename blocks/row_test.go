@@ -1,6 +1,7 @@
 package blocks
 
 import (
+	"math"
 	"testing"
 
 	"go.xchunk.org/beautify"
@@ -32,8 +33,8 @@ func TestRow(t *testing.T) {
 		{"flex weights", Row(cells(Flex(1, a), Flex(2, b))), 12, []string{"aaa bb      "}},
 		{"flex remainder goes left first", Row(cells(Flex(1, a), Flex(1, b), Flex(1, c))), 11, []string{"aaa bb  c  "}},
 		{"flex weights below 1", Row(cells(Flex(0, a), Flex(-5, b))), 8, []string{"aaa bb  "}},
-		{"huge weights are limited", Row(cells(Flex(1<<62, a), Flex(1<<62, b))), 8, []string{"aaa bb  "}},
-		{"huge gap", Row(cells(Auto(a), Auto(b), Auto(c)), RowGap(1<<62)), 8, []string{"aaa"}},
+		{"huge weights are limited", Row(cells(Flex(math.MaxInt, a), Flex(math.MaxInt, b))), 8, []string{"aaa bb  "}},
+		{"huge gap", Row(cells(Auto(a), Auto(b), Auto(c)), RowGap(math.MaxInt)), 8, []string{"aaa"}},
 		{"flex gets the rest", Row(cells(Fixed(4, a), Flex(1, b), Auto(c)), RowGap(1)), 12, []string{"aaa  bb    c"}},
 		{"flex without room is omitted", Row(cells(Fixed(5, a), Flex(1, b))), 5, []string{"aaa  "}},
 		{"fixed is clamped in order", Row(cells(Fixed(4, a), Fixed(4, b))), 6, []string{"aaa bb"}},

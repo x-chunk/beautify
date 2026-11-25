@@ -1,6 +1,7 @@
 package blocks
 
 import (
+	"math"
 	"testing"
 
 	"go.xchunk.org/beautify"
@@ -26,7 +27,7 @@ func TestSized(t *testing.T) {
 
 	// The bound wins over the minimum, the maximum wins over the minimum.
 	checkText(t, Sized(c, MinWidth(9)), 4, "a   ", "bbb ")
-	checkText(t, Sized(c, MinWidth(1<<60)), 4, "a   ", "bbb ")
+	checkText(t, Sized(c, MinWidth(math.MaxInt)), 4, "a   ", "bbb ")
 	checkText(t, Sized(c, MinWidth(9), MaxWidth(2)), unbounded, "a ", "bb")
 	checkText(t, Sized(c, MinHeight(9), MaxHeight(1)), unbounded, "a")
 
