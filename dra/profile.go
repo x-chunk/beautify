@@ -1,5 +1,7 @@
 package dra
 
+import "go.xchunk.org/beautify/internal/ansi"
+
 // Profile is the color capability the Engine renders for. Values outside
 // the defined range are treated as ProfilePlain.
 type Profile uint8
@@ -27,5 +29,21 @@ func (p Profile) String() string {
 		return "truecolor"
 	default:
 		return "plain"
+	}
+}
+
+// level converts p to the level of the encoder.
+func (p Profile) level() ansi.Level {
+	switch p {
+	case ProfileNoColor:
+		return ansi.NoColor
+	case ProfileANSI16:
+		return ansi.ANSI16
+	case ProfileANSI256:
+		return ansi.ANSI256
+	case ProfileTrueColor:
+		return ansi.TrueColor
+	default:
+		return ansi.Plain
 	}
 }
