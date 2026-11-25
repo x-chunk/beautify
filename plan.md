@@ -2055,3 +2055,34 @@ added or changed, and why.
   border cells and the padding, which only the block that draws the frame
   can reach. The join cells live in `BorderSet` so that every provided
   set, and every custom one, has matching dividers.
+- 2026-11-25. Decisions made during the implementation of v1. No public
+  `dra` API was added beyond this plan.
+  - `internal/width` gets `Separable`. The builder of composed models merges
+    equal neighboring spans only when that keeps the clusters at the
+    boundary apart; otherwise a merge could change a width in Long Mode.
+    `internal/ansi` gets `ToRGB` for the stops of `Gradient`.
+  - In `internal/width` an invalid byte and a newline never take part in a
+    longer cluster, not even after a ZWJ, and a ZWJ without a base does not
+    attach the rune after it.
+  - `Wrap` with `WrapWords` drops the indentation when the first word does
+    not fit after it, instead of emitting an empty line. A zero-width cluster
+    never causes a break.
+  - A nil `ComposableFunc` returns `ErrNilComposable` instead of panicking.
+  - A bounded `Template` cuts its result to the bound, because separators
+    alone can exceed it. The separator is rendered, and can fail, whenever
+    there is at least one item.
+  - A `Border` title keeps one edge cell next to the corner when there is
+    room. Its text can take the inner width minus its two spaces. Vertical
+    padding is not drawn around an empty child.
+  - The cells of a footer under a gradient are restyled one by one, because
+    `RestyleFunc` would override the footer's own colors.
+  - Table border sets without vertical lines get no special padding: the two
+    spaces between the columns of `TableMinimal` are the default padding of
+    both neighbors, so the outer cells have a margin of one space. A table
+    with headers and no rows has no line under the header.
+  - `Row` limits `Flex` weights to 1,000,000 and does not hand the gaps of
+    omitted cells to other cells. Horizontal decoration larger than the bound
+    is limited to it.
+  - Every test package imports `internal/golden`, so that
+    `go test ./... -update` works, and `.gitattributes` protects golden files
+    from line-ending conversion.
