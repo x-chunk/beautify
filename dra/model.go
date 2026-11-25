@@ -17,10 +17,11 @@ import "strings"
 // Model is an immutable value and is safe for concurrent use. The zero Model
 // is empty and renders nothing.
 type Model struct {
-	leaf *leaf  // nil for models without a slot
-	slot *Model // content of the slot, nil when unfilled
-	size metrics
-	mode Mode
+	leaf  *leaf  // nil for models without a slot
+	slot  *Model // content of the slot, nil when unfilled
+	lines []line // content of a model without a slot
+	size  metrics
+	mode  Mode
 }
 
 // leaf is the part of a model that Fill shares between its results.
@@ -45,6 +46,44 @@ func newLeaf(l leaf) Model {
 	l.prefixSize = measure(l.prefix, l.mode)
 	l.suffixSize = measure(l.suffix, l.mode)
 	return Model{leaf: &l, size: l.prefixSize.concat(l.suffixSize), mode: l.mode}
+}
+
+// prefixMap returns the colormap of the prefix, or nil.
+func (l *leaf) prefixMap() []int8 {
+	if l.cmap == nil {
+		return nil
+	}
+	return l.cmap[:l.prefixRunes]
+}
+
+// suffixMap returns the colormap of the suffix, or nil.
+func (l *leaf) suffixMap() []int8 {
+	if l.cmap == nil {
+		return nil
+	}
+	return l.cmap[l.prefixRunes:]
+}
+
+// nextRun finds the longest start of text whose runes share a colormap
+// entry. It returns the length of the run in bytes and runes and its style
+// resolved against outer. Without a colormap the run is the whole text and
+// the number of runes is not counted. text must not be empty.
+func (l *leaf) nextRun(text string, cmap []int8, outer Style) (size, runes int, st Style) {
+	if len(cmap) == 0 {
+		return len(text), 0, outer
+	}
+	size = len(text)
+	for pos := range text {
+		if cmap[runes] != cmap[0] {
+			size = pos
+			break
+		}
+		runes++
+	}
+	if cmap[0] == NoStyle {
+		return size, runes, outer
+	}
+	return size, runes, l.palette[cmap[0]].Over(outer)
 }
 
 // Width returns the width in cells of the widest line.
@@ -108,6 +147,14 @@ func (m Model) String() string {
 
 func (m *Model) writeText(b *strings.Builder) {
 	if m.leaf == nil {
+		for i, l := range m.lines {
+			if i > 0 {
+				b.WriteByte('\n')
+			}
+			for _, s := range l.spans {
+				b.WriteString(s.text)
+			}
+		}
 		return
 	}
 	b.WriteString(m.leaf.prefix)

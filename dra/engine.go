@@ -68,53 +68,46 @@ type encoder struct {
 func (w *encoder) model(m *Model, inherited Style) {
 	l := m.leaf
 	if l == nil {
+		w.lines(m.lines, inherited)
 		return
 	}
 	outer := l.base.Over(inherited)
-	if l.cmap == nil {
-		w.text(l.prefix, outer)
-	} else {
-		w.mapped(l.prefix, l.cmap[:l.prefixRunes], l.palette, outer)
-	}
+	w.mapped(l.prefix, l.prefixMap(), l, outer)
 	if m.slot != nil {
 		w.model(m.slot, outer)
 	}
-	if l.cmap == nil {
-		w.text(l.suffix, outer)
-	} else {
-		w.mapped(l.suffix, l.cmap[l.prefixRunes:], l.palette, outer)
-	}
+	w.mapped(l.suffix, l.suffixMap(), l, outer)
 }
 
-// mapped emits text as runs of equal colormap entries.
-func (w *encoder) mapped(text string, cmap []int8, palette []Style, outer Style) {
-	start, i := 0, 0
-	for pos := range text {
-		if i > 0 && cmap[i] != cmap[i-1] {
-			w.text(text[start:pos], entryStyle(palette, cmap[i-1], outer))
-			start = pos
+// lines emits the content of a composed model.
+func (w *encoder) lines(lines []line, inherited Style) {
+	for i, l := range lines {
+		if i > 0 {
+			w.newline()
 		}
-		i++
-	}
-	if i > 0 {
-		w.text(text[start:], entryStyle(palette, cmap[i-1], outer))
+		for _, s := range l.spans {
+			w.line(s.text, w.downgrade(s.style.Over(inherited)))
+		}
 	}
 }
 
-// entryStyle resolves a colormap entry against the style of its model.
-func entryStyle(palette []Style, entry int8, outer Style) Style {
-	if entry == NoStyle {
-		return outer
+// mapped emits one part of a leaf as runs of equal style.
+func (w *encoder) mapped(text string, cmap []int8, l *leaf, outer Style) {
+	for text != "" {
+		size, runes, st := l.nextRun(text, cmap, outer)
+		w.text(text[:size], st)
+		text, cmap = text[size:], cmap[min(runes, len(cmap)):]
 	}
-	return palette[entry].Over(outer)
+}
+
+// downgrade converts s to what the profile can show.
+func (w *encoder) downgrade(s Style) ansi.Style {
+	return ansi.Downgrade(ansi.Style{FG: s.FG.c, BG: s.BG.c, Attrs: uint8(s.Attrs)}, w.level)
 }
 
 // text emits a run that has one style.
 func (w *encoder) text(text string, s Style) {
-	if text == "" {
-		return
-	}
-	d := ansi.Downgrade(ansi.Style{FG: s.FG.c, BG: s.BG.c, Attrs: uint8(s.Attrs)}, w.level)
+	d := w.downgrade(s)
 	for {
 		i := strings.IndexByte(text, '\n')
 		piece := text

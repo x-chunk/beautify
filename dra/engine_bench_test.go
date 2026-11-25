@@ -22,13 +22,25 @@ func threeLevels() Model {
 	return f.MustNew(WithFrame("[", "]"), WithStyle(Style{Attrs: Bold})).Fill(middle)
 }
 
+// fiftyLines is a composed model of 50 styled lines.
+func fiftyLines() Model {
+	m := fiveRuns()
+	var b builder
+	for range 50 {
+		b.addLine(firstLine(m))
+		b.endLine()
+	}
+	return b.model()
+}
+
 func TestAppendDoesNotAllocate(t *testing.T) {
 	models := map[string]Model{
-		"plain":  NewFactory().Text("hello, world"),
-		"runs":   fiveRuns(),
-		"nested": threeLevels(),
+		"plain":    NewFactory().Text("hello, world"),
+		"runs":     fiveRuns(),
+		"nested":   threeLevels(),
+		"composed": fiftyLines(),
 	}
-	buf := make([]byte, 0, 4096)
+	buf := make([]byte, 0, 1<<14)
 	for name, m := range models {
 		for _, p := range allProfiles {
 			e := NewEngine(p)
@@ -47,6 +59,7 @@ func BenchmarkAppend(b *testing.B) {
 		{"Plain", NewFactory().Text(strings.Repeat("plain text ", 7))},
 		{"FiveRuns", fiveRuns()},
 		{"Nested", threeLevels()},
+		{"Composed50", fiftyLines()},
 	}
 	for _, bm := range models {
 		b.Run(bm.name, func(b *testing.B) {
