@@ -32,7 +32,8 @@ func Auto(c beautify.Composable) Cell {
 	return Cell{c, autoCell, 0}
 }
 
-// maxWeight limits flex weights so that dividing the width cannot overflow.
+// maxWeight limits flex weights so that dividing the width cannot overflow
+// 64-bit arithmetic.
 const maxWeight = 1_000_000
 
 // Flex returns a cell that gets a share of the width that the other cells
@@ -160,7 +161,7 @@ func shares(cells []Cell, total, weights int) []int {
 	rest := total
 	for i, c := range cells {
 		if c.kind == flexCell {
-			out[i] = total * c.size / weights
+			out[i] = int(int64(total) * int64(c.size) / int64(weights))
 			rest -= out[i]
 		}
 	}

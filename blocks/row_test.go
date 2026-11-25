@@ -63,6 +63,17 @@ func TestRow(t *testing.T) {
 	}
 }
 
+func TestRowSharesDoNotOverflow(t *testing.T) {
+	row := Row(cells(Flex(math.MaxInt, raw("a")), Flex(math.MaxInt, raw("b"))))
+	m := render(t, row, 10_000)
+	if m.Width() != 10_000 {
+		t.Errorf("width = %d, want 10000", m.Width())
+	}
+	if got := dra.Truncate(m, 5_001, dra.Model{}).String(); got[0] != 'a' || got[5_000] != 'b' {
+		t.Error("the cells do not share the width evenly")
+	}
+}
+
 func TestRowCopiesCells(t *testing.T) {
 	in := cells(Auto(raw("a")), Auto(raw("b")))
 	row := Row(in)
