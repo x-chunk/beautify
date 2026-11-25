@@ -64,3 +64,18 @@ func applyOptions[C any, O ~func(*C)](cfg *C, opts []O) {
 func oneLine(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", " "), "\n", " ")
 }
+
+// glyph returns s as exactly one cell with the style st: an empty s becomes a
+// space and a wider one is cut.
+func glyph(f *dra.Factory, s string, st dra.Style) dra.Model {
+	lines := dra.Lines(dra.Truncate(f.Styled(s, st), 1, dra.Model{}))
+	if len(lines) == 0 || lines[0].Width() == 0 {
+		return f.Styled(" ", st)
+	}
+	return lines[0]
+}
+
+// vertical returns height copies of cell under each other.
+func vertical(cell dra.Model, height int) dra.Model {
+	return dra.PrefixLines(dra.Blank(0, height), cell, cell)
+}

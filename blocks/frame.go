@@ -179,19 +179,14 @@ func (p *painter) interior(y int, body dra.Model) dra.Model {
 	blank := dra.Blank(p.inner, p.padY)
 	body = dra.Stack(dra.AlignLeft, blank, pad(body, p.padX, p.padX), blank)
 	column := func(s string, x int) dra.Model {
-		c := p.cell(s)
-		return p.paintOver(dra.PrefixLines(dra.Blank(0, body.Height()), c, c), x, y)
+		return p.paintOver(vertical(p.cell(s), body.Height()), x, y)
 	}
 	return dra.Join(dra.AlignTop, column(p.set.Left, 0), body, column(p.set.Right, 1+p.inner))
 }
 
 // cell returns s as exactly one cell in the style of the frame.
 func (p *painter) cell(s string) dra.Model {
-	lines := dra.Lines(dra.Truncate(p.factory.Styled(s, p.style), 1, dra.Model{}))
-	if len(lines) == 0 || lines[0].Width() == 0 {
-		return p.factory.Styled(" ", p.style)
-	}
-	return lines[0]
+	return glyph(p.factory, s, p.style)
 }
 
 // painterOf returns how to color a label with style st: a foreground of its
