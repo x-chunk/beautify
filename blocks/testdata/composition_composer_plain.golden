@@ -1,0 +1,14 @@
+╭─ report ─╮
+│ A report │
+╰──────────╯
+Status:  ok 
+Owner : a long name that wraps
+        at the bound
+──────────────────────────────
+╭───────┬─────╮
+│ Name  │ Qty │
+├───────┼─────┤
+│ Apple │ 1   │
+╰───────┴─────╯
+1. first
+2. second

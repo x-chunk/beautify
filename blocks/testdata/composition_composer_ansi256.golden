@@ -1,0 +1,14 @@
+[0;1;34m╭─ report ─╮[0m
+[0;1;34m│[0m A report [0;1;34m│[0m
+[0;1;34m╰──────────╯[0m
+Status: [0;42m ok [0m
+Owner : a long name that wraps
+        at the bound
+[0;31m──────────────────────────────[0m
+╭───────┬─────╮
+│ Name  │ Qty │
+├───────┼─────┤
+│ Apple │ 1   │
+╰───────┴─────╯
+1. first
+2. second
