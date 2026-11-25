@@ -142,6 +142,7 @@ func (b border) Render(ctx beautify.Context) (dra.Model, error) {
 	if noRoom(ctx) {
 		return dra.Model{}, nil
 	}
+	b.padX = limit(ctx, b.padX)
 	body, err := renderChild(b.inner(ctx), "border", 0, b.child)
 	if err != nil {
 		return dra.Model{}, err

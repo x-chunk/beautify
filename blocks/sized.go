@@ -15,7 +15,7 @@ func MinWidth(n int) SizedOption {
 
 // MaxWidth limits the child to n cells.
 func MaxWidth(n int) SizedOption {
-	return func(s *sized) { s.maxWidth = limit{max(n, 0), true} }
+	return func(s *sized) { s.maxWidth = maximum{max(n, 0), true} }
 }
 
 // Width sets the minimum and the maximum width to n cells.
@@ -33,7 +33,7 @@ func MinHeight(n int) SizedOption {
 
 // MaxHeight limits the child to n lines.
 func MaxHeight(n int) SizedOption {
-	return func(s *sized) { s.maxHeight = limit{max(n, 0), true} }
+	return func(s *sized) { s.maxHeight = maximum{max(n, 0), true} }
 }
 
 // Height sets the minimum and the maximum height to n lines.
@@ -44,8 +44,8 @@ func Height(n int) SizedOption {
 	}
 }
 
-// limit is an optional maximum.
-type limit struct {
+// maximum is an optional upper limit.
+type maximum struct {
 	n   int
 	set bool
 }
@@ -53,7 +53,7 @@ type limit struct {
 type sized struct {
 	child               beautify.Composable
 	minWidth, minHeight int
-	maxWidth, maxHeight limit
+	maxWidth, maxHeight maximum
 }
 
 // Sized constrains the size of child. A maximum wins over a minimum, and the
@@ -83,9 +83,5 @@ func (s sized) Render(ctx beautify.Context) (dra.Model, error) {
 	if s.maxHeight.set {
 		m = dra.TruncateHeight(m, s.maxHeight.n)
 	}
-	width := s.minWidth
-	if w, bounded := ctx.Width(); bounded {
-		width = min(width, w)
-	}
-	return clip(ctx, dra.Pad(m, width, dra.AlignLeft)), nil
+	return clip(ctx, dra.Pad(m, limit(ctx, s.minWidth), dra.AlignLeft)), nil
 }

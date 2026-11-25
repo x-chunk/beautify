@@ -155,6 +155,7 @@ func (t table) Render(ctx beautify.Context) (dra.Model, error) {
 	if noRoom(ctx) {
 		return dra.Model{}, nil
 	}
+	t.padding = limit(ctx, t.padding)
 	columns := len(t.headers)
 	for _, r := range t.rows {
 		columns = max(columns, len(r))

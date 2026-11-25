@@ -90,6 +90,7 @@ func (s sections) Render(ctx beautify.Context) (dra.Model, error) {
 	if noRoom(ctx) || len(s.list) == 0 {
 		return dra.Model{}, nil
 	}
+	s.padX = limit(ctx, s.padX)
 	inner := s.inner(ctx)
 	parts := make([]framePart, len(s.list))
 	for i, section := range s.list {

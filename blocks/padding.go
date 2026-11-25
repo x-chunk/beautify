@@ -49,6 +49,7 @@ func (p padding) Render(ctx beautify.Context) (dra.Model, error) {
 	if noRoom(ctx) {
 		return dra.Model{}, nil
 	}
+	p.left, p.right = limit(ctx, p.left), limit(ctx, p.right)
 	m, err := renderChild(shrink(ctx, p.left+p.right), "padding", 0, p.child)
 	if err != nil {
 		return dra.Model{}, err

@@ -25,6 +25,16 @@ func shrink(ctx beautify.Context, n int) beautify.Context {
 	return ctx
 }
 
+// limit returns n, or the bound of ctx when n exceeds it. Decoration beyond
+// the bound is cut anyway, and limiting it first avoids overflow and useless
+// work for huge sizes.
+func limit(ctx beautify.Context, n int) int {
+	if w, bounded := ctx.Width(); bounded {
+		return min(n, w)
+	}
+	return n
+}
+
 // clip cuts m to the bound of ctx.
 func clip(ctx beautify.Context, m dra.Model) dra.Model {
 	if w, bounded := ctx.Width(); bounded && m.Width() > w {

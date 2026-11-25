@@ -20,9 +20,5 @@ func (s space) Render(ctx beautify.Context) (dra.Model, error) {
 	if noRoom(ctx) {
 		return dra.Model{}, nil
 	}
-	width := s.width
-	if w, bounded := ctx.Width(); bounded {
-		width = min(width, w)
-	}
-	return dra.Blank(width, s.height), nil
+	return dra.Blank(limit(ctx, s.width), s.height), nil
 }
