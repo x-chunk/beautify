@@ -48,6 +48,7 @@ func TestWrap(t *testing.T) {
 		{"long word after the indentation", text(" abcdef"), 4, WrapWords, "abcd\nef", 4, 2},
 		{"trailing spaces that fit", text("abc d  "), 3, WrapWords, "abc\nd  ", 3, 2},
 		{"trailing spaces that do not fit", text("abc de    "), 3, WrapWords, "abc\nde", 3, 2},
+		{"tab is four spaces", text("ab\tcd"), 5, WrapWords, "ab\ncd", 2, 2},
 		{"no-break space is part of a word", text("a b c"), 3, WrapWords, "a b\nc", 3, 2},
 		{"width 1", text("a bc"), 1, WrapWords, "a\nb\nc", 1, 3},
 		{"wide clusters at width 1", long("漢 字"), 1, WrapWords, "漢\n字", 2, 2},

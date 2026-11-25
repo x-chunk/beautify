@@ -42,6 +42,7 @@ func TestTruncate(t *testing.T) {
 		{"joiner sequence goes whole", long("a" + family + "b"), 2, Model{}, "a", 1, 1},
 		{"flag", long("\U0001F1E6\U0001F1E7\U0001F1E8"), 2, Model{}, "\U0001F1E6\U0001F1E7", 2, 1},
 		{"combining mark stays with its base", long("éé"), 1, Model{}, "é", 1, 1},
+		{"tab is four cells", text("a\tb"), 3, Model{}, "a  ", 3, 1},
 		{"invalid bytes", text("\xff\xfe"), 1, Model{}, "�", 1, 1},
 		{"mixed modes", Concat(text("漢"), long("漢漢")), 3, Model{}, "漢漢", 3, 1},
 	}
