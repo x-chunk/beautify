@@ -47,3 +47,68 @@ func Concat(ms ...Model) Model {
 	}
 	return b.model()
 }
+
+// Stack places models under each other. Empty models add nothing. Lines are
+// padded on the left to align them with the widest line of the result and
+// are never padded on the right; use Pad for that.
+func Stack(align Align, ms ...Model) Model {
+	widest, height := 0, 0
+	for _, m := range ms {
+		widest = max(widest, m.Width())
+		height += m.Height()
+	}
+	lines := make([]line, 0, height)
+	for i := range ms {
+		for _, l := range flatten(&ms[i]) {
+			lines = append(lines, padLine(l, align.lead(widest-l.width), 0))
+		}
+	}
+	return composed(lines)
+}
+
+// Join places models side by side. Empty models are skipped. Shorter models
+// are extended with empty lines according to valign. The lines of every
+// model except the last one are padded on the right to the width of that
+// model, so the next model starts in a straight column.
+func Join(valign VAlign, ms ...Model) Model {
+	height := 0
+	columns := make([]Model, 0, len(ms))
+	for _, m := range ms {
+		if !m.IsEmpty() {
+			columns = append(columns, m)
+			height = max(height, m.Height())
+		}
+	}
+	flat := make([][]line, len(columns))
+	for i := range columns {
+		flat[i] = flatten(&columns[i])
+	}
+	var b builder
+	for y := range height {
+		for i, lines := range flat {
+			var l line
+			if row := y - valign.lead(height-len(lines)); row >= 0 && row < len(lines) {
+				l = lines[row]
+			}
+			b.addLine(l)
+			if i < len(flat)-1 {
+				b.add(spaces(columns[i].Width() - l.width))
+			}
+		}
+		b.endLine()
+	}
+	return b.model()
+}
+
+// padLine returns l with unstyled spaces around it.
+func padLine(l line, left, right int) line {
+	if left <= 0 && right <= 0 {
+		return l
+	}
+	var b builder
+	b.add(spaces(left))
+	b.addLine(l)
+	b.add(spaces(right))
+	b.endLine()
+	return b.lines[0]
+}
