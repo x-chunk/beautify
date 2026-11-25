@@ -54,3 +54,17 @@ func TestCheckUpdateWritesFile(t *testing.T) {
 func TestAssertReadsTestdata(t *testing.T) {
 	Assert(t, "assert_bytes", []byte("\x1b[0;1mbold\x1b[0m\n"))
 }
+
+func TestCheckReportsFileErrors(t *testing.T) {
+	dir := t.TempDir()
+	if err := check(dir, nil, false); err == nil {
+		t.Error("reading a directory: check() = nil")
+	}
+	file := filepath.Join(dir, "file")
+	if err := os.WriteFile(file, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := check(filepath.Join(file, "x.golden"), nil, true); err == nil {
+		t.Error("creating a directory below a file: check() = nil")
+	}
+}
